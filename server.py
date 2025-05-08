@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from contextlib import asynccontextmanager
-from tts import KokoroTTS, MinimaxTTS
+from tts import KokoroTTS, MegaTTS3
 from utils.task_queue import TTSQueue, PlaybackQueue
 from utils.playback import play_audio
 from utils.stream_utils import TextBuffer, clean_markdown_for_tts
@@ -13,7 +13,8 @@ text_buffer = TextBuffer()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    tts_engine = KokoroTTS(voice="zf_071")
+    # tts_engine = KokoroTTS(voice="zf_071")
+    tts_engine = MegaTTS3()
     app.state.play_queue = PlaybackQueue(play_audio)
     app.state.text_queue = TTSQueue(
         lambda text: tts_engine.tts(text), app.state.play_queue
@@ -22,7 +23,7 @@ async def lifespan(app: FastAPI):
     await app.state.play_queue.start_worker()
     await app.state.text_queue.start_worker()
 
-    await app.state.text_queue.add("我来了\n")
+    await app.state.text_queue.add("我来了")
 
     yield
 
@@ -56,6 +57,7 @@ async def tts_endpoint(payload: TTSText, request: Request):
 @app.post("/stream_tts")
 async def stream_tts_endpoint(payload: TTSText, request: Request):
     text_queue = request.app.state.text_queue
+    global text_buffer
     text_buffer.add_text(payload.text)
     sentence_gen = text_buffer.pop_sentence()
     while sentence := next(sentence_gen):
@@ -69,4 +71,4 @@ async def stream_tts_endpoint(payload: TTSText, request: Request):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="0.0.0.0", port=8800)
+    uvicorn.run("server:app", host="0.0.0.0", port=8800)
