@@ -1,7 +1,7 @@
+import tts
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from tts import KokoroTTS, MegaTTS3
 from utils.task_queue import TTSQueue, PlaybackQueue
 from utils.playback import play_audio
 from utils.stream_utils import TextBuffer, clean_markdown_for_tts
@@ -14,8 +14,9 @@ text_buffer = TextBuffer()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # tts_engine = KokoroTTS(voice="zf_071")
-    tts_engine = MegaTTS3()
+    # tts_engine = tts.KokoroTTS(voice="zf_071")
+    tts_engine = tts.MegaTTS3()
+    # tts_engine = tts.MinimaxTTS()
     app.state.play_queue = PlaybackQueue(play_audio)
     app.state.text_queue = TTSQueue(
         lambda text: tts_engine.tts(text), app.state.play_queue
