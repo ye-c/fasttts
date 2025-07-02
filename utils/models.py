@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
 
-class TTSText(BaseModel):
+class TTSRequest(BaseModel):
     text: str
+    emotion: str = "neutral"
+    speed: float = 1.0

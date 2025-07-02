@@ -14,6 +14,41 @@ from .base import BaseTTS
 class MinimaxTTS(BaseTTS):
     """
     Minimax TTS模型适配接口，适用于同步批量文本的tts调用。
+
+    | 类别   | 音色ID                       | 音色描述         | 版本 |
+    | ---- | -------------------------- | ------------ | -- |
+    | 男性音色 | male-qn-qingse             | 青涩青年音色       | v1 |
+    | 男性音色 | male-qn-jingying           | 精英青年音色       | v1 |
+    | 男性音色 | male-qn-badao              | 霸道青年音色       | v1 |
+    | 男性音色 | male-qn-daxuesheng         | 青年大学生音色      | v1 |
+    | 男性音色 | presenter_male            | 男性主持人        | v1 |
+    | 男性音色 | audiobook_male_1         | 男性有声书1       | v1 |
+    | 男性音色 | audiobook_male_2         | 男性有声书2       | v1 |
+    | 男性音色 | male-qn-qingse-jingpin     | 青涩青年音色-beta  | v1 |
+    | 男性音色 | male-qn-jingying-jingpin   | 精英青年音色-beta  | v1 |
+    | 男性音色 | male-qn-badao-jingpin      | 霸道青年音色-beta  | v1 |
+    | 男性音色 | male-qn-daxuesheng-jingpin | 青年大学生音色-beta | v1 |
+    | 男性音色 | clever_boy                | 聪明男童         | v2 |
+    | 男性音色 | cute_boy                  | 可爱男童         | v2 |
+    | 女性音色 | female-shaonv              | 少女音色         | v1 |
+    | 女性音色 | female-yujie               | 御姐音色         | v1 |
+    | 女性音色 | female-chengshu            | 成熟女性音色       | v1 |
+    | 女性音色 | female-tianmei             | 甜美女性音色       | v1 |
+    | 女性音色 | presenter_female          | 女性主持人        | v1 |
+    | 女性音色 | audiobook_female_1       | 女性有声书1       | v1 |
+    | 女性音色 | audiobook_female_2       | 女性有声书2       | v1 |
+    | 女性音色 | female-shaonv-jingpin      | 少女音色-beta    | v1 |
+    | 女性音色 | female-yujie-jingpin       | 御姐音色-beta    | v1 |
+    | 女性音色 | female-chengshu-jingpin    | 成熟女性音色-beta  | v1 |
+    | 女性音色 | female-tianmei-jingpin     | 甜美女性音色-beta  | v1 |
+    | 女性音色 | lovely_girl               | 萌萌女童         | v2 |
+    | 女性音色 | qiaopi_mengmei            | 俏皮萌妹         | v2 |
+    | 女性音色 | diadia_xuemei             | 喃喃学妹         | v2 |
+    | 女性音色 | danya_xuejie              | 淡雅学姐         | v2 |
+    | 女性音色 | wumei_yujie               | 妩媚御姐         | v2 |
+    | 女性音色 | tianxin_xiaoling          | 甜心小玲         | v2 |
+
+
     """
 
     def __init__(
@@ -21,7 +56,7 @@ class MinimaxTTS(BaseTTS):
         api_key="",
         module="speech-02-hd",
         emotion="neutral",
-        voice="male-qn-qingse",
+        voice="female-tianmei",
         tts_samplerate=32000,
     ):
         self.api_key = api_key or os.getenv("MINIMAX_API_KEY")
@@ -30,15 +65,19 @@ class MinimaxTTS(BaseTTS):
         self.voice_id = voice
         self.tts_samplerate = tts_samplerate
 
-    def tts(self, text: str, emotion: str = None):
+    def tts(self, text: str, emotion: str = None, speed=1.0):
         """
         # 同步调用：文本→完整音频
         """
+        print(text, emotion, speed)
         loop = asyncio.get_running_loop()
         nest_asyncio.apply()
-        return loop.run_until_complete(self.tts_sync(text, emotion))
+        result = loop.run_until_complete(self.tts_sync(text, emotion, speed))
+        print(result)
+        return result
 
-    async def tts_sync(self, text: str, emotion: str = None):
+    async def tts_sync(self, text: str, emotion: str = None, speed=1.0):
+        print(text, emotion, speed)
         url = "wss://api.minimax.chat/ws/v1/t2a_v2"
         headers = {"Authorization": f"Bearer {self.api_key}"}
 
@@ -62,7 +101,7 @@ class MinimaxTTS(BaseTTS):
                         "model": self.module,
                         "voice_setting": {
                             "voice_id": self.voice_id,
-                            "speed": 1.2,
+                            "speed": speed,
                             "vol": 1,
                             "pitch": 0,
                             "emotion": emotion or self.emotion,

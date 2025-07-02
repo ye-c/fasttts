@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from utils.task_queue import TTSQueue, PlaybackQueue
 from utils.playback import play_audio
 from utils.stream_utils import TextBuffer, clean_markdown_for_tts
-from utils.models import TTSText
+from utils.models import TTSRequest
 
 
 # 初始化文本缓冲区
@@ -15,17 +15,18 @@ text_buffer = TextBuffer()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # tts_engine = tts.KokoroTTS(voice="zf_071")
-    tts_engine = tts.MegaTTS3()
-    # tts_engine = tts.MinimaxTTS()
+    # tts_engine = tts.MegaTTS3()
+    tts_engine = tts.MinimaxTTS()
     app.state.play_queue = PlaybackQueue(play_audio)
     app.state.text_queue = TTSQueue(
-        lambda text: tts_engine.tts(text), app.state.play_queue
+        lambda payload: tts_engine.tts(**payload.model_dump()),
+        app.state.play_queue,
     )
 
     await app.state.play_queue.start_worker()
     await app.state.text_queue.start_worker()
 
-    await app.state.text_queue.add("我来了")
+    await app.state.text_queue.add(TTSRequest(text="我来了"))
 
     yield
 
@@ -59,14 +60,14 @@ async def status(request: Request):
 
 
 @app.post("/tts")
-async def tts_endpoint(payload: TTSText, request: Request):
+async def tts_endpoint(payload: TTSRequest, request: Request):
     text_queue = request.app.state.text_queue
-    await text_queue.add(payload.text)
+    await text_queue.add(payload)
     return {"status": "success", "queue": text_queue.len}
 
 
 @app.post("/stream_tts")
-async def stream_tts_endpoint(payload: TTSText, request: Request):
+async def stream_tts_endpoint(payload: TTSRequest, request: Request):
     text_queue = request.app.state.text_queue
     global text_buffer
     text_buffer.add_text(payload.text)
