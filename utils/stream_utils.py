@@ -57,25 +57,28 @@ def split_sentences(text, strict=False):
 
 class TextBuffer:
     def __init__(self):
-        self.buffer = ""
+        self._buffer = ""
         self.timeout = 0.1
 
+    def __str__(self):
+        return f"当前缓冲文本: {'|'.join(self._buffer)} (长度: {len(self._buffer)})"
+
     def __repr__(self):
-        return self.buffer
+        return self._buffer
 
     def add_text(self, text: str) -> None:
         """添加文本到缓冲区"""
-        self.buffer += text
+        self._buffer += text
 
     def pop_sentence(self) -> str:
         """生成器方法，返回缓冲区中的完整句子"""
         while True:
-            sentences = split_sentences(self.buffer, strict=True)
+            sentences = split_sentences(self._buffer, strict=True)
             if sentences:
                 # 返回第一个完整句子
                 yield sentences[0]
                 # 移除已处理的句子
-                self.buffer = self.buffer[len(sentences[0]) :].lstrip()
+                self._buffer = self._buffer[len(sentences[0]) :].lstrip()
             else:
                 # 没有完整句子时返回None
                 yield None

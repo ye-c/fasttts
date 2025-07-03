@@ -2,7 +2,7 @@ from .base import BaseTTS
 from .mock import MockTTS
 from ._kokoro import KokoroTTS
 from ._minimax import MinimaxTTS
-from ._megatts3 import MegaTTS3
+from .api import MegaTTS3, CosyVoice
 
 __all__ = [
     "BaseTTS",
@@ -10,4 +10,5 @@ __all__ = [
     "KokoroTTS",
     "MinimaxTTS",
     "MegaTTS3",
+    "CosyVoice",
 ]

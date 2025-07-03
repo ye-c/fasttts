@@ -6,7 +6,7 @@ import soundfile as sf
 import ssl
 import websockets
 from io import BytesIO
-import nest_asyncio
+# import nest_asyncio
 
 from .base import BaseTTS
 
@@ -69,15 +69,11 @@ class MinimaxTTS(BaseTTS):
         """
         # 同步调用：文本→完整音频
         """
-        print(text, emotion, speed)
         loop = asyncio.get_running_loop()
-        nest_asyncio.apply()
         result = loop.run_until_complete(self.tts_sync(text, emotion, speed))
-        print(result)
         return result
 
-    async def tts_sync(self, text: str, emotion: str = None, speed=1.0):
-        print(text, emotion, speed)
+    async def tts_sync(self, text: str, emotion: str = None, speed=1.0, **kwargs):
         url = "wss://api.minimax.chat/ws/v1/t2a_v2"
         headers = {"Authorization": f"Bearer {self.api_key}"}
 
@@ -138,4 +134,5 @@ class MinimaxTTS(BaseTTS):
         with sf.SoundFile(buf, "rb") as f:
             samplerate = f.samplerate
             data = f.read(dtype="float32")
+
         return np.array(data), samplerate

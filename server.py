@@ -16,10 +16,11 @@ text_buffer = TextBuffer()
 async def lifespan(app: FastAPI):
     # tts_engine = tts.KokoroTTS(voice="zf_071")
     # tts_engine = tts.MegaTTS3()
-    tts_engine = tts.MinimaxTTS()
+    # tts_engine = tts.MinimaxTTS()
+    tts_engine = tts.CosyVoice()
     app.state.play_queue = PlaybackQueue(play_audio)
     app.state.text_queue = TTSQueue(
-        lambda payload: tts_engine.tts(**payload.model_dump()),
+        lambda payload: tts_engine.tts_sync(**payload.model_dump()),
         app.state.play_queue,
     )
 

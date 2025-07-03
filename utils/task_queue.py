@@ -23,7 +23,8 @@ class TTSQueue:
             if text is None:
                 break
             # TTS处理
-            audio, sr = await asyncio.to_thread(self._tts_fn, text)
+            # audio, sr = await asyncio.to_thread(self._tts_fn, text)
+            audio, sr = await self._tts_fn(text)
             # TTS产物丢到下一队列
             await self._playback_queue.add(audio, sr)
             self._queue.task_done()
@@ -60,6 +61,7 @@ class PlaybackQueue:
                 break
             audio, sr = task
             await asyncio.to_thread(self._play_fn, audio, sr)
+            # self._play_fn(audio, sr)
             self._queue.task_done()
 
     async def add(self, audio, samplerate):
