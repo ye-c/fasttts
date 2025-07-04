@@ -1,6 +1,9 @@
 import httpx
 from utils.audio_utils import load_wav
 from utils.models import TTSRequest
+from utils.logg import get_logger
+
+logger = get_logger()
 
 
 class BaseAPI:
@@ -43,7 +46,7 @@ class CosyVoice(BaseAPI):
     async def tts_sync(self, **kwargs):
         payload = TTSRequest(**kwargs)
         if not payload.prompt_speech_16k:
-            voice_wav = "assets/zh_reba18.wav"
+            voice_wav = "assets/zh_reba12.wav"
             # voice_wav = "assets/zh_reba_manyou20.wav"
             payload.prompt_speech_16k = load_wav(voice_wav).squeeze().numpy().tolist()
         if not payload.instruct:

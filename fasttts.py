@@ -3,15 +3,16 @@ from datetime import datetime
 from fastapi import FastAPI, Request
 from contextlib import asynccontextmanager
 from utils.task_queue import TTSQueue, PlaybackQueue
-from utils.playback import play_audio
 from utils.models import TTSRequest
 from utils.stream_utils import TextBuffer, clean_text_for_tts
+from utils.logg import get_logger
 
+logger = get_logger()
 # 全局队列映射
 engine_map = {}
 # 全局文本缓冲区
 text_buffer = TextBuffer()
-playback_queue = PlaybackQueue(play_audio)
+playback_queue = PlaybackQueue()
 
 
 @asynccontextmanager
@@ -37,9 +38,10 @@ async def lifespan(app: FastAPI):
         engine_map[name] = {
             "engine": tts_engine,
             "text_queue": text_queue,
-            "playback_queue": playback_queue,
+            # "playback_queue": playback_queue,
         }
 
+    await text_queue.add(TTSRequest(text="Hello，我来啦"))
     yield
 
     # 清理资源
@@ -54,13 +56,13 @@ app = FastAPI(lifespan=lifespan)
 @app.post("/status")
 async def status_all(request: Request):
     """返回全局状态 + 所有引擎状态"""
-    global engine_map, text_buffer
+    global engine_map, text_buffer, playback_queue
 
     engines_status = {}
     for name, engine_info in engine_map.items():
         engines_status[name] = {
             "text_queue": engine_info["text_queue"].len,
-            "playback_queue": engine_info["playback_queue"].len,
+            # "playback_queue": engine_info["playback_queue"].len,
         }
 
     return {
@@ -70,6 +72,7 @@ async def status_all(request: Request):
             "text_buffer": str(text_buffer),
             "active_engines": list(engine_map.keys()),
         },
+        "playback_queue": playback_queue.len,
         "engines": engines_status,
     }
 
@@ -86,7 +89,6 @@ async def status_single(engine_name: str, request: Request):
         "engine": engine_name,
         "timestamp": datetime.now().isoformat(),
         "tts_queue": engine_info["text_queue"].len,
-        "playback_queue": engine_info["playback_queue"].len,
         "config": {
             "engine_type": engine_info["engine"].__class__.__name__,
             "tts_url": getattr(engine_info["engine"], "URL", "N/A"),
@@ -96,7 +98,7 @@ async def status_single(engine_name: str, request: Request):
 
 @app.post("/tts")
 async def default_tts_endpoint(payload: TTSRequest, request: Request):
-    # 默认使用 CosyVoice
+    # 默认使用 megatts3 cosyvoice minimax
     return await tts_endpoint("cosyvoice", payload, request)
 
 
@@ -109,14 +111,16 @@ async def tts_endpoint(engine_name: str, payload: TTSRequest, request: Request):
 
     global text_buffer
     text_buffer.add_text(payload.text)
-    sentence_gen = text_buffer.pop_sentence()
-    while sentence := next(sentence_gen):
+    # sentence_gen = text_buffer.pop_sentence()
+    # while sentence := next(sentence_gen):
+    for sentence in text_buffer.pop_sentence():
         cleaned = clean_text_for_tts(sentence)
         if not cleaned.strip():
             continue  # 该句全是无意义内容，跳过
-        print("TEXT:", sentence)
-        payload.text = sentence
-        await text_queue.add(payload)
+        new_payload = payload.model_copy(update={"text": cleaned})
+        logger.debug(f"Sentence: {cleaned}")
+        logger.debug(f"text_queue={text_queue.len}")
+        await text_queue.add(new_payload)
 
     return {"status": "success", "queue": text_queue.len, "engine": engine_name}
 

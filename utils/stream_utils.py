@@ -46,8 +46,8 @@ def split_sentences(text, strict=False):
         False  最后一段无标点或换行也返回；
         True   只返回以分句符或换行结尾的句子。
     """
-    # pattern = r'([^。？！…….!?\n]*[。？！…….!?\n]+(?=[\'"\”\’\)\]\}]*))'
-    pattern = r"([^\n]*\n+)"
+    pattern = r'([^。？！…….!?\n]*[。？！…….!?\n]+(?=[\'"\”\’\)\]\}]*))'
+    # pattern = r"([^\n]*\n+)"
     sentences = re.findall(pattern, text)
     sentences = [s.strip() for s in sentences if s.strip()]
 
@@ -56,6 +56,20 @@ def split_sentences(text, strict=False):
         sentences.append(last_chunk.strip())
 
     return sentences
+
+
+def split_voice_sentence(text, strict=True):
+    merged_sentences = []
+    buffer = ""
+    for s in split_sentences(text, strict):
+        if len(s) > 10:
+            merged_sentences.append(f"{buffer}{s}")
+            buffer = ""
+        elif not merged_sentences:
+            buffer += s
+        else:
+            merged_sentences[-1] += s
+    return merged_sentences
 
 
 class TextBuffer:
@@ -73,15 +87,20 @@ class TextBuffer:
         """添加文本到缓冲区"""
         self._buffer += text
 
-    def pop_sentence(self) -> str:
+    # def pop_sentence(self) -> str:
+    #     """生成器方法，返回缓冲区中的完整句子"""
+    #     while True:
+    #         sentences = split_sentences(self._buffer, strict=True)
+    #         if sentences:
+    #             # 返回第一个完整句子
+    #             yield sentences[0]
+    #             # 移除已处理的句子
+    #             self._buffer = self._buffer[len(sentences[0]) :].lstrip()
+    #         else:
+    #             # 没有完整句子时返回None
+    #             yield None
+
+    def pop_sentence(self, strict=True) -> str:
         """生成器方法，返回缓冲区中的完整句子"""
-        while True:
-            sentences = split_sentences(self._buffer, strict=True)
-            if sentences:
-                # 返回第一个完整句子
-                yield sentences[0]
-                # 移除已处理的句子
-                self._buffer = self._buffer[len(sentences[0]) :].lstrip()
-            else:
-                # 没有完整句子时返回None
-                yield None
+        for sentence in split_voice_sentence(self._buffer, strict=strict):
+            yield sentence

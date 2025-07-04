@@ -16,8 +16,8 @@ def add_silence(audio_data, sample_rate, seconds, noise=False):
     """
     if noise:
         # 生成-0.01到0.01之间的随机噪声
-        padding = np.random.uniform(-0.005, 0.005, int(sample_rate * seconds))
-        padding = padding.astype(audio_data.dtype)
+        padding = np.random.uniform(-0.001, 0.001, int(sample_rate * seconds))
+        # padding = padding.astype(audio_data.dtype)
     else:
         padding = np.zeros(int(sample_rate * seconds), dtype=audio_data.dtype)
 

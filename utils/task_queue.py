@@ -1,5 +1,9 @@
 import asyncio
 from .audio_utils import add_silence
+from .logg import get_logger
+from utils.playback import play_audio
+
+logger = get_logger()
 
 
 class TTSQueue:
@@ -24,7 +28,6 @@ class TTSQueue:
             if text is None:
                 break
             # TTS处理
-            # audio, sr = await asyncio.to_thread(self._tts_fn, text)
             audio, sr = await self._tts_fn(text)
             # TTS产物丢到下一队列
             await self._playback_queue.add(audio, sr)
@@ -41,9 +44,8 @@ class TTSQueue:
 
 
 class PlaybackQueue:
-    def __init__(self, play_fn):
+    def __init__(self):
         self._queue = asyncio.Queue()
-        self._play_fn = play_fn  # 例如play_audio
         self._worker = None
         self._shutdown = False
 
@@ -61,13 +63,18 @@ class PlaybackQueue:
             if task is None:
                 break
             audio, sr = task
-            await asyncio.to_thread(self._play_fn, audio, sr)
+            logger.debug(f"playback_queue={self._queue.qsize()}")
+            await asyncio.to_thread(play_audio, audio, sr)
             self._queue.task_done()
 
     async def add(self, audio, samplerate):
-        if self._queue.empty():
-            audio = add_silence(audio, samplerate, 0.6, True)
-        await self._queue.put((audio, samplerate))
+        try:
+            if self._queue.empty():
+                audio = add_silence(audio, samplerate, 0.6, True)
+            await self._queue.put((audio, samplerate))
+        except Exception as e:
+            logger.error(f"{type(audio)=} {samplerate=}")
+            logger.error(e)
 
     async def stop_worker(self):
         self._shutdown = True
