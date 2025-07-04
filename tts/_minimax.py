@@ -55,8 +55,8 @@ class MinimaxTTS(BaseTTS):
         self,
         api_key="",
         module="speech-02-hd",
-        emotion="neutral",
-        voice="female-tianmei",
+        emotion="happy",
+        voice="tianxin_xiaoling",
         tts_samplerate=32000,
     ):
         self.api_key = api_key or os.getenv("MINIMAX_API_KEY")
@@ -65,7 +65,7 @@ class MinimaxTTS(BaseTTS):
         self.voice_id = voice
         self.tts_samplerate = tts_samplerate
 
-    def tts(self, text: str, emotion: str = None, speed=1.0):
+    def tts(self, text: str, emotion: str = None, speed=1.2):
         """
         # 同步调用：文本→完整音频
         """
@@ -73,7 +73,7 @@ class MinimaxTTS(BaseTTS):
         result = loop.run_until_complete(self.tts_sync(text, emotion, speed))
         return result
 
-    async def tts_sync(self, text: str, emotion: str = None, speed=1.0, **kwargs):
+    async def tts_sync(self, text: str, emotion: str = None, speed=1.2, **kwargs):
         url = "wss://api.minimax.chat/ws/v1/t2a_v2"
         headers = {"Authorization": f"Bearer {self.api_key}"}
 

@@ -1,8 +1,8 @@
 import re
+import emoji
 
 
-def clean_markdown_for_tts(text: str) -> str:
-    lines = text.split("\n")
+def clean_text_for_tts(text: str) -> str:
     cleaned = []
     inside_code_block = False
 
@@ -12,7 +12,7 @@ def clean_markdown_for_tts(text: str) -> str:
     quote_pattern = re.compile(r"^\s{0,3}>\s*")  # >引用
     only_symbols_pattern = re.compile(r"^[\s\W_]+$")  # 纯符号
 
-    for line in lines:
+    for line in text.split("\n"):
         # 进入或退出代码块
         if code_block_pattern.match(line):
             inside_code_block = not inside_code_block
@@ -33,7 +33,10 @@ def clean_markdown_for_tts(text: str) -> str:
             continue
         # 其余正常内容
         cleaned.append(line.strip())
-    return " ".join(cleaned)
+
+    res = " ".join(cleaned)
+    res = emoji.replace_emoji(res, replace="").strip()
+    return res
 
 
 def split_sentences(text, strict=False):
@@ -60,8 +63,8 @@ class TextBuffer:
         self._buffer = ""
         self.timeout = 0.1
 
-    def __str__(self):
-        return f"当前缓冲文本: {'|'.join(self._buffer)} (长度: {len(self._buffer)})"
+    # def __str__(self):
+    #     return f"当前缓冲文本: {'|'.join(self._buffer)} (长度: {len(self._buffer)})"
 
     def __repr__(self):
         return self._buffer

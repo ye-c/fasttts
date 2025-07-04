@@ -1,4 +1,5 @@
 import asyncio
+from .audio_utils import add_silence
 
 
 class TTSQueue:
@@ -61,10 +62,11 @@ class PlaybackQueue:
                 break
             audio, sr = task
             await asyncio.to_thread(self._play_fn, audio, sr)
-            # self._play_fn(audio, sr)
             self._queue.task_done()
 
     async def add(self, audio, samplerate):
+        if self._queue.empty():
+            audio = add_silence(audio, samplerate, 0.6, True)
         await self._queue.put((audio, samplerate))
 
     async def stop_worker(self):

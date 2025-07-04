@@ -1,4 +1,5 @@
 import numpy as np
+import torchaudio
 
 
 def add_silence(audio_data, sample_rate, seconds, noise=False):
@@ -21,3 +22,16 @@ def add_silence(audio_data, sample_rate, seconds, noise=False):
         padding = np.zeros(int(sample_rate * seconds), dtype=audio_data.dtype)
 
     return np.concatenate((padding, audio_data))
+
+
+def load_wav(wav, target_sr=16000):
+    speech, sample_rate = torchaudio.load(wav, backend="soundfile")
+    speech = speech.mean(dim=0, keepdim=True)
+    if sample_rate != target_sr:
+        assert sample_rate > target_sr, (
+            "wav sample rate {} must be greater than {}".format(sample_rate, target_sr)
+        )
+        speech = torchaudio.transforms.Resample(
+            orig_freq=sample_rate, new_freq=target_sr
+        )(speech)
+    return speech

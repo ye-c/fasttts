@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from utils.task_queue import TTSQueue, PlaybackQueue
 from utils.playback import play_audio
-from utils.stream_utils import TextBuffer, clean_markdown_for_tts
+from utils.stream_utils import TextBuffer, clean_text_for_tts
 from utils.models import TTSRequest
 
 
@@ -74,7 +74,7 @@ async def stream_tts_endpoint(payload: TTSRequest, request: Request):
     text_buffer.add_text(payload.text)
     sentence_gen = text_buffer.pop_sentence()
     while sentence := next(sentence_gen):
-        cleaned = clean_markdown_for_tts(sentence)
+        cleaned = clean_text_for_tts(sentence)
         if not cleaned.strip():
             continue  # 该句全是无意义内容，跳过
         await text_queue.add(sentence)

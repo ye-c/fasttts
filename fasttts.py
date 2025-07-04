@@ -5,17 +5,18 @@ from contextlib import asynccontextmanager
 from utils.task_queue import TTSQueue, PlaybackQueue
 from utils.playback import play_audio
 from utils.models import TTSRequest
-from utils.stream_utils import TextBuffer, clean_markdown_for_tts
+from utils.stream_utils import TextBuffer, clean_text_for_tts
 
 # 全局队列映射
 engine_map = {}
 # 全局文本缓冲区
 text_buffer = TextBuffer()
+playback_queue = PlaybackQueue(play_audio)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global engine_map
+    global engine_map, playback_queue
 
     # 初始化所有 TTS 引擎及其独立队列
     engines = {
@@ -24,13 +25,12 @@ async def lifespan(app: FastAPI):
         "cosyvoice": tts.CosyVoice(),
     }
 
+    await playback_queue.start_worker()
     for name, tts_engine in engines.items():
-        playback_queue = PlaybackQueue(play_audio)
         text_queue = TTSQueue(
             lambda payload, e=tts_engine: e.tts_sync(**payload.model_dump()),
             playback_queue,
         )
-        await playback_queue.start_worker()
         await text_queue.start_worker()
 
         # 存储引擎与队列映射关系
@@ -43,9 +43,9 @@ async def lifespan(app: FastAPI):
     yield
 
     # 清理资源
+    await playback_queue.stop_worker()
     for name in engine_map:
         await engine_map[name]["text_queue"].stop_worker()
-        await playback_queue.stop_worker()
 
 
 app = FastAPI(lifespan=lifespan)
@@ -111,7 +111,7 @@ async def tts_endpoint(engine_name: str, payload: TTSRequest, request: Request):
     text_buffer.add_text(payload.text)
     sentence_gen = text_buffer.pop_sentence()
     while sentence := next(sentence_gen):
-        cleaned = clean_markdown_for_tts(sentence)
+        cleaned = clean_text_for_tts(sentence)
         if not cleaned.strip():
             continue  # 该句全是无意义内容，跳过
         print("TEXT:", sentence)

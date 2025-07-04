@@ -24,6 +24,8 @@ dependencies = [
     "torch",
     "transformers",
     "uvicorn>=0.34.2",
+    "emoji>=2.14.1",
+    "torchaudio>=2.7.0",
 ]
 
 [tool.uv]
